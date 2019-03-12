@@ -10,10 +10,10 @@ export default class TableSummary extends Component {
   };
   
   constructor(props){
-    super(props)
+    super(props);
     this.state = {
       isLoading: true
-    }
+    };
     this.getNbpTable();
   }
   
@@ -31,6 +31,52 @@ export default class TableSummary extends Component {
       });
   }
 
+
+  renderHeaderRow() {
+    return (
+      <View style={{ flex: 1, alignSelf: 'stretch', flexDirection: 'row' }}>
+        <View style={{ flex: 1, alignSelf: 'stretch' }} >
+          <Text>
+            Currency
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignSelf: 'stretch' }} >
+          <Text>
+            Bid
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignSelf: 'stretch' }} >
+          <Text>
+            Ask
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  renderRow(currency, bid, ask, index) {
+    return (
+      <View key={index} style={{ flex: 1, alignSelf: 'stretch', flexDirection: 'row' }}>
+        <View style={{ flex: 1, alignSelf: 'stretch' }} >
+          <Text>
+            {currency}
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignSelf: 'stretch' }} >
+          <Text>
+            {bid}
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignSelf: 'stretch' }} >
+          <Text>
+            {ask}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+
   render(){
     if(this.state.isLoading){
       return(
@@ -42,7 +88,14 @@ export default class TableSummary extends Component {
     
     return(
       <View style={styles.container}>
-      <Text>{this.state.table.no}</Text>
+      <Text>Trading date: {this.state.table.tradingDate}</Text>
+      <Text>Effective date: {this.state.table.effectiveDate}</Text>
+      {this.renderHeaderRow()}
+      {
+        this.state.table.rates.map((data, index) => {
+          return this.renderRow(data.code, data.bid, data.ask, index)
+        })
+      }
       </View>
     );
   } 
