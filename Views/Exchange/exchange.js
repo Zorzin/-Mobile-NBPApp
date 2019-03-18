@@ -17,7 +17,11 @@ export default class Exchange extends Component {
       currencies: [],
       currency : 'USD',
       plnText: 'Mam',
-      foreignText : 'Chcę'
+      foreignText : 'Chcę',
+      plnValue: '100',
+      foreignValue : '',
+      plnWant : true,
+      foreignWant: false
     };
     this.getNbpTable();
   }
@@ -39,6 +43,27 @@ export default class Exchange extends Component {
       });
   }
 
+  getAmountWithoutText(text) {
+   return text.replace(/[^0-9,.]/g,'');
+  }
+
+  onRevertButton(){
+    this.setState({plnWant : !this.state.plnWant});
+    this.setState({foreignWant : !this.state.foreignWant});
+    this.setState({plnText: this.state.plnWant === true ? "Chcę" : "Mam" });
+    this.setState({foreignText: this.state.foreignWant === true ? "Chcę" : "Mam" });
+  }
+
+  setForeignValue(text) {
+    this.setState({foreignValue : this.getAmountWithoutText(text)});
+    this.setState({plnValue: ''});
+  }
+
+  setPLNValue(text) {
+    this.setState({plnValue : this.getAmountWithoutText(text)});
+    this.setState({foreignValue: ''});
+  }
+
   renderPickerItem(data, index){
     return (
       <Picker.Item key={index} label={data} value={data}></Picker.Item>
@@ -46,7 +71,7 @@ export default class Exchange extends Component {
   }
 
   render(){
-    if(this.state.isLoading){
+    if (this.state.isLoading){
       return(
         <View style={{flex: 1, padding: 20}}>
           <Text>Loading....</Text>
@@ -57,12 +82,18 @@ export default class Exchange extends Component {
       <View style={styles.container}>
         <View>
           <Text>{this.state.plnText}</Text>
-          <TextInput/>
+          <TextInput
+              keyboardType = 'numeric'
+              onChangeText = {(text) => this.setPLNValue(text)}
+              value = {this.state.plnValue}/>
           <Text>PLN</Text>
         </View>
         <View>
           <Text>{this.state.foreignText}</Text>
-          <TextInput/>
+          <TextInput
+              keyboardType = 'numeric'
+              onChangeText = {(text) => this.setForeignValue(text)}
+              value = {this.state.foreignValue}/>
           <Picker selectedValue={this.state.currency}
                   onValueChange={(itemValue, itemIndex) => this.setState({currency: itemValue})}>
             {this.state.currencies.map((data, index) => {
@@ -71,7 +102,9 @@ export default class Exchange extends Component {
           </Picker>
         </View>
 
-        <TouchableWithoutFeedback>
+        <TouchableWithoutFeedback
+          onPress = {() => this.onRevertButton()}
+        >
           <Text>
             Odwróć
           </Text>
