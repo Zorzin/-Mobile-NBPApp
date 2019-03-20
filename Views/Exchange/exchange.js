@@ -20,8 +20,11 @@ export default class Exchange extends Component {
       foreignText : 'Chcę',
       plnValue: '100',
       foreignValue : '',
-      plnWant : true,
-      foreignWant: false
+      plnWant : false,
+      foreignWant: true,
+      finishValue: 0,
+      canRenderExchange: false,
+      date: new Date()
     };
     this.getNbpTable();
   }
@@ -44,24 +47,77 @@ export default class Exchange extends Component {
   }
 
   getAmountWithoutText(text) {
-   return text.replace(/[^0-9,.]/g,'');
+   return text.replace(/[^0-9.]/g,'');
   }
 
   onRevertButton(){
+    this.setState({plnText: this.state.plnWant === true ? "Mam" : "Chcę" });
+    this.setState({foreignText: this.state.foreignWant === true ? "Mam" : "Chcę" });
     this.setState({plnWant : !this.state.plnWant});
     this.setState({foreignWant : !this.state.foreignWant});
-    this.setState({plnText: this.state.plnWant === true ? "Chcę" : "Mam" });
-    this.setState({foreignText: this.state.foreignWant === true ? "Chcę" : "Mam" });
   }
 
   setForeignValue(text) {
+    this.setState({canRenderExchange: false});
     this.setState({foreignValue : this.getAmountWithoutText(text)});
     this.setState({plnValue: ''});
   }
 
   setPLNValue(text) {
+    this.setState({canRenderExchange: false});
     this.setState({plnValue : this.getAmountWithoutText(text)});
     this.setState({foreignValue: ''});
+  }
+
+  async calculate() {
+
+    if(!this.onPressValidate()){
+      return;
+    }
+
+    let bid = false; //kupno obcej waluty
+
+    if (this.state.plnWant === true && this.state.plnValue){
+      bid = true;
+    } else if (this.state.plnWant === true && this.state.foreignValue){
+      bid = false;
+    } else if (this.state.plnWant === false && this.state.foreignValue){
+      bid = true;
+    } else if (this.state.plnWant === false && this.state.plnValue){
+      bid = false;
+    }
+
+    await this.getExchangeValue(this.state.currency, this.state.date.toISOString().substring(0,10), bid);
+
+    let finishValue = 0;
+
+    if (this.state.plnValue){
+      finishValue = this.state.plnValue / this.state.rateValue;
+    } else {
+      finishValue = this.state.foreignValue * this.state.rateValue;
+    }
+
+    this.setState({finishValue : Math.round(finishValue*100)/100});
+  }
+
+  async getExchangeValue(currency, date, bid) {
+    const response = await fetch('http://api.nbp.pl/api/exchangerates/rates/c/' + currency + '/' + '2019-03-19' + '?format=json');
+    const json = await response.json();
+    let rate = json.rates[0];
+    if (bid === true){
+      this.setState({rateValue:rate.bid});
+      this.setState({canRenderExchange: true});
+    } else{
+      this.setState({rateValue:rate.ask});
+      this.setState({canRenderExchange: true});
+    }
+  }
+
+  onPressValidate() {
+    if (!this.state.foreignValue && !this.state.plnValue){
+      return false;
+    }
+    return true;
   }
 
   renderPickerItem(data, index){
@@ -109,9 +165,55 @@ export default class Exchange extends Component {
             Odwróć
           </Text>
         </TouchableWithoutFeedback>
-        <Button title={'Oblicz'} />
+        <Button onPress = {() => this.calculate()} title={'Oblicz'} />
+
+        {this.renderExchange()}
       </View>
     );
+  }
+
+  renderExchange() {
+    if (!this.state.canRenderExchange){
+      return null;
+    }
+
+      if (this.state.plnWant === true && this.state.plnValue){
+        return <View>
+          <Text>
+            To get {this.state.plnValue} PLN you need {this.state.finishValue} {this.state.currency}
+          </Text>
+        </View>
+      } else if (this.state.plnWant === true && this.state.foreignValue){
+        return <View>
+          <Text>
+            If you have {this.state.foreignValue} {this.state.currency} you can get {this.state.finishValue} PLN
+          </Text>
+        </View>
+      } else if (this.state.plnWant === false && this.state.foreignValue){
+        return <View>
+          <Text>
+              To get {this.state.foreignValue} {this.state.currency} you need {this.state.finishValue} PLN
+          </Text>
+        </View>
+      } else if (this.state.plnWant === false && this.state.plnValue){
+        return <View>
+          <Text>
+              If you have {this.state.plnValue} PLN you can get {this.state.finishValue} {this.state.currency}
+          </Text>
+        </View>
+      }
+
+
+    if (this.state.plnWant){
+
+    }
+    if (this.state.foreignWant){
+      return <View>
+        <Text>
+          To get {this.state.foreignValue} {this.state.currency} you need {this.state.finishValue} PLN
+        </Text>
+      </View>
+    }
   }
 }
 
